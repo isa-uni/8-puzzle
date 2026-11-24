@@ -26,18 +26,42 @@ class State:
 
     def neighbors(self) -> List["State"]:
         """Retorna os estados filhos válidos a partir deste estado."""
-        # TODO: implemente a geração de estados filhos
-        raise NotImplementedError
+        pos_vazio = self.blank_index          # posição do espaço vazio (0 a 8)
+        linha, coluna = divmod(pos_vazio, 3)  # linha e coluna dessa posição no tabuleiro 3x3
+
+        # Cada movimento: (nome da ação, posição da peça que troca com o vazio, se cabe no tabuleiro)
+        movimentos = [
+            ("cima",     pos_vazio - 3, linha > 0),
+            ("baixo",    pos_vazio + 3, linha < 2),
+            ("esquerda", pos_vazio - 1, coluna > 0),
+            ("direita",  pos_vazio + 1, coluna < 2),
+        ]
+
+        filhos = []
+        for acao, destino, valido in movimentos:
+            if not valido:
+                continue
+            novas_pecas = list(self.tiles)                    # tupla não pode ser alterada, então copiamos para lista
+            novas_pecas[pos_vazio], novas_pecas[destino] = novas_pecas[destino], novas_pecas[pos_vazio]
+            filhos.append(
+                State(tuple(novas_pecas), parent=self, action=acao, cost=self.cost + 1)
+            )
+        return filhos
 
     def path(self) -> List["State"]:
         """Retorna a sequência de estados do estado inicial até este."""
-        # TODO: implemente a reconstrução do caminho usando self.parent
-        raise NotImplementedError
+        estados = []
+        atual = self
+        while atual is not None:      # sobe pelos pais até chegar ao inicial (parent é None)
+            estados.append(atual)
+            atual = atual.parent
+        estados.reverse()             # estava do atual para o inicial; inverte para o inicial vir primeiro
+        return estados
 
     def actions(self) -> List[str]:
         """Retorna a sequência de ações do estado inicial até este."""
-        # TODO: implemente usando path()
-        raise NotImplementedError
+        # o primeiro estado do caminho é o inicial, que não tem ação (action=None), então pulamos ele
+        return [estado.action for estado in self.path()[1:]]
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, State) and self.tiles == other.tiles
